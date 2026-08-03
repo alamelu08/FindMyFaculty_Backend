@@ -1,3 +1,7 @@
+from fastapi import UploadFile, File
+import os
+import shutil
+from app.services.timetable_service import upload_timetable_service
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database.session import SessionLocal
@@ -41,3 +45,18 @@ def remove_faculty(
     if not deleted_faculty:
         raise HTTPException(status_code=404, detail="Faculty not found")
     return {"message": "Faculty deleted successfully"}
+@router.post("/upload-timetable")
+async def upload_timetable(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+
+    upload_dir = "uploads"
+    os.makedirs(upload_dir, exist_ok=True)
+
+    file_path = os.path.join(upload_dir, file.filename)
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    return upload_timetable_service(file_path, db)

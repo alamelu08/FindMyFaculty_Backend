@@ -1,19 +1,22 @@
+from typing import Optional
 from pydantic import BaseModel
+
 class FacultyCreate(BaseModel):
+    id: str
     name: str
     image_url: str
     cabin: str
     cabin_directions: str
 class FacultyResponse(BaseModel):
-    id: int
+    id: str
     name: str
-    image_url: str
+    image_url: Optional[str] = None
     cabin: str
-    cabin_directions: str
+    cabin_directions: Optional[str] = None
     class Config:
         from_attributes = True
 class FacultyUpdate(BaseModel):
     name: str
     image_url: str
     cabin: str
-    cabin_directions: str        
+    cabin_directions: str        
