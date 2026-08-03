@@ -74,22 +74,21 @@ def upload_timetable_service(file_path, db: Session):
             if not row or len(row) < 2:
                 continue
 
-            faculty_code = row[0].strip()
+            faculty_id = row[0].strip()
             faculty_name = row[1].strip()
 
-            faculty_map[faculty_code] = faculty_name
-
+            faculty_map[faculty_id] = faculty_name
         print("Faculty Map:")
         print(faculty_map)
 
         # -------------------------
         # Save Faculty
         # -------------------------
-        for faculty_code, faculty_name in faculty_map.items():
-
+        for faculty_id, faculty_name in faculty_map.items():
+            print("Reading:", faculty_id, faculty_name)
             existing = (
                 db.query(Faculty)
-                .filter(Faculty.faculty_code == faculty_code)
+                .filter(Faculty.id == faculty_id)
                 .first()
             )
 
@@ -101,7 +100,7 @@ def upload_timetable_service(file_path, db: Session):
 
             db.add(
                 Faculty(
-                    faculty_code=faculty_code,
+                    id=faculty_id,
                     name=faculty_name,
                     cabin="-",
                     image_url=None,
@@ -156,16 +155,16 @@ def upload_timetable_service(file_path, db: Session):
 
                 faculty_ids = faculty_text.split("/")
 
-                for faculty_code in faculty_ids:
+                for faculty_id in faculty_ids:
 
-                    faculty_code = faculty_code.strip()
+                    faculty_id = faculty_id.strip()
 
-                    if faculty_code == "":
+                    if faculty_id == "":
                         continue
 
                     records.append(
                         {
-                            "faculty_code": faculty_code,
+                            "faculty_id": faculty_id,
                             "day": day,
                             "period_no": period_no,
                             "room": room
@@ -188,7 +187,7 @@ def upload_timetable_service(file_path, db: Session):
 
         faculty = (
             db.query(Faculty)
-            .filter(Faculty.faculty_code == record["faculty_code"])
+            .filter(Faculty.id == record["faculty_id"])
             .first()
         )
 
@@ -196,7 +195,7 @@ def upload_timetable_service(file_path, db: Session):
         if faculty is None:
 
             faculty = Faculty(
-                faculty_code=record["faculty_code"],
+                id=record["faculty_id"],
                 name="Unknown",
                 cabin="-",
                 image_url=None,
@@ -207,7 +206,7 @@ def upload_timetable_service(file_path, db: Session):
             db.commit()
             db.refresh(faculty)
 
-            print(f"Created faculty {record['faculty_code']}")
+            print(f"Created faculty {record['faculty_id']}")
 
         timetable = FacultyTimetable(
             faculty_id=faculty.id,

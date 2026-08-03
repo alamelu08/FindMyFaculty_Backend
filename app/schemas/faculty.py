@@ -2,12 +2,13 @@ from typing import Optional
 from pydantic import BaseModel
 
 class FacultyCreate(BaseModel):
+    id: str
     name: str
     image_url: str
     cabin: str
     cabin_directions: str
 class FacultyResponse(BaseModel):
-    id: int
+    id: str
     name: str
     image_url: Optional[str] = None
     cabin: str

@@ -28,26 +28,26 @@ def search_faculties(
     db: Session = Depends(get_db)
 ):
     return search_faculty(db, name)
-@router.get("/code/{faculty_code}")
-def get_faculty_by_code(
-    faculty_code: str,
+@router.get("/{faculty_id}/details")
+def get_faculty_details_route(
+    faculty_id: str,
     db: Session = Depends(get_db)
 ):
-    faculty = get_faculty_details(faculty_code, db)
+    faculty = get_faculty_details(faculty_id, db)
 
     if faculty.get("message") == "Faculty not found":
         raise HTTPException(status_code=404, detail="Faculty not found")
 
     return faculty
 @router.get("/{faculty_id}", response_model=FacultyResponse)
-def get_faculty(faculty_id: int, db: Session = Depends(get_db)):
+def get_faculty(faculty_id: str, db: Session = Depends(get_db)):
     faculty = get_faculty_by_id(db, faculty_id)
     if not faculty:
         raise HTTPException(status_code=404, detail="Faculty not found")
     return faculty
 @router.get("/{faculty_id}/location")
 def faculty_location(
-    faculty_id: int,
+    faculty_id: str,
     db: Session = Depends(get_db)
 ):
     location = get_faculty_location(db, faculty_id)
