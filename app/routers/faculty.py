@@ -7,7 +7,8 @@ from app.services.faculty_services import (
     get_faculty_by_id,
     search_faculty,
     get_faculty_location,
-    get_faculty_details
+    get_faculty_details,
+    get_upcoming_faculty_hours
 )
 from app.dependencies.student_auth import get_current_user
 
@@ -62,5 +63,16 @@ def faculty_location(
 
     return location
 
+@router.get("/{faculty_id}/upcoming")
+def faculty_upcoming_hours(
+    faculty_id:str,
+    db: Session=Depends(get_db)
+):
+    upcoming = get_upcoming_faculty_hours(db,faculty_id)
+    if upcoming is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Faculty not found"
+        )
 
-    
+    return upcoming
