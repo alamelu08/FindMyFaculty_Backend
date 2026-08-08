@@ -5,19 +5,27 @@ from datetime import datetime
 from app.models.faculty_timetable import FacultyTimetable
 from app.models.period import Period
 from datetime import time
+from app.utils.uuid_generator import generate_faculty_uuid
+from app.utils.image_finder import find_image_url
+from app.utils.name_normalizer import normalize_name
 
 
 def create_faculty(db: Session, faculty: FacultyCreate):
+
+    normalized_name = normalize_name(faculty.name)
+
     new_faculty = Faculty(
-    id=faculty.id,
-    name=faculty.name,
-    image_url=faculty.image_url,
-    cabin=faculty.cabin,
-    cabin_directions=faculty.cabin_directions
+        id=generate_faculty_uuid(normalized_name),
+        name=normalized_name,
+        image_url=find_image_url(normalized_name),
+        cabin=faculty.cabin,
+        cabin_directions=faculty.cabin_directions
     )
+
     db.add(new_faculty)
     db.commit()
     db.refresh(new_faculty)
+
     return new_faculty
 
 def get_all_faculties(db: Session):
@@ -26,20 +34,35 @@ def get_all_faculties(db: Session):
 def get_faculty_by_id(db: Session, faculty_id: str):
     return db.query(Faculty).filter(Faculty.id == faculty_id).first()
 
-def update_faculty(db: Session, faculty_id: str, faculty: FacultyUpdate):
-    existing_faculty = db.query(Faculty).filter(Faculty.id == faculty_id).first()
+def update_faculty(db: Session, faculty_name: str, faculty: FacultyUpdate):
+
+    existing_faculty = (
+        db.query(Faculty)
+        .filter(Faculty.name == normalize_name(faculty_name))
+        .first()
+    )
+
     if not existing_faculty:
         return None
-    existing_faculty.name = faculty.name
-    existing_faculty.image_url = faculty.image_url
+
+    normalized_name = normalize_name(faculty.name)
+
+    existing_faculty.name = normalized_name
+    existing_faculty.image_url = find_image_url(normalized_name)
     existing_faculty.cabin = faculty.cabin
     existing_faculty.cabin_directions = faculty.cabin_directions
+
     db.commit()
     db.refresh(existing_faculty)
+
     return existing_faculty
 
-def delete_faculty(db: Session, faculty_id: str):
-    faculty = db.query(Faculty).filter(Faculty.id == faculty_id).first()
+def delete_faculty(db: Session, faculty_name: str):
+    faculty = (
+        db.query(Faculty)
+        .filter(Faculty.name == faculty_name)
+        .first()
+    )
     if not faculty:
         return None
     db.delete(faculty)
