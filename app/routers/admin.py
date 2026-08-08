@@ -5,6 +5,7 @@ from app.services.timetable_service import upload_timetable_service
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database.session import SessionLocal
+from app.dependencies.admin_auth import get_current_admin
 from app.schemas.faculty import FacultyCreate, FacultyUpdate, FacultyResponse
 from app.services.faculty_services import (
     create_faculty,
@@ -12,7 +13,7 @@ from app.services.faculty_services import (
     delete_faculty,
 )
 
-router = APIRouter(prefix="/admin", tags=["Admin"])
+router = APIRouter(prefix="/admin", tags=["Admin"],dependencies=[Depends(get_current_admin)])
 
 def get_db():
     db = SessionLocal()
