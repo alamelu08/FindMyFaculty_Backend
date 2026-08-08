@@ -45,6 +45,7 @@ def remove_faculty(
     if not deleted_faculty:
         raise HTTPException(status_code=404, detail="Faculty not found")
     return {"message": "Faculty deleted successfully"}
+
 @router.post("/upload-timetable")
 async def upload_timetable(
     file: UploadFile = File(...),
