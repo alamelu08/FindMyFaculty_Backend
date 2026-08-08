@@ -32,7 +32,7 @@ async def verify_student(rollno: str, password: str):
         follow_redirects=True
         )
 
-        if "/Login/Logout" in login_response.text:
+        if "/studzone/Login/Logout" in login_response.text:
             return True
         return False
 

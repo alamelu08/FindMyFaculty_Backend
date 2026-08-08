@@ -9,7 +9,9 @@ from app.services.faculty_services import (
     get_faculty_location,
     get_faculty_details
 )
-router = APIRouter(prefix="/faculty", tags=["Faculty"])
+from app.dependencies.student_auth import get_current_user
+
+router = APIRouter(prefix="/faculty", tags=["Faculty"],dependencies=[Depends(get_current_user)])
 
 def get_db():
     db = SessionLocal()

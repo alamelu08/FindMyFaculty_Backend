@@ -1,14 +1,15 @@
-from fastapi import APIRouter,HTTPException
-from app.schemas.login import Login
+from fastapi import APIRouter,HTTPException,Depends
+from fastapi.security import OAuth2PasswordRequestForm
 import app.services.auth as auth
 from app.token import create_access_token
 
-router = APIRouter(tags=['authentication'])
+router = APIRouter()
 
-@router.post("/login")
-async def login(request:Login):
+@router.post("/login",tags=["Authentication"])
+async def login(request: OAuth2PasswordRequestForm = Depends()):
+
     valid = await auth.verify_student(
-        request.rollno,
+        request.username,
         request.password
     )
 
@@ -19,7 +20,7 @@ async def login(request:Login):
         )
 
     access_token = create_access_token(
-        data={"sub": request.rollno}
+        data={"sub": request.username}
     )
 
     return {
