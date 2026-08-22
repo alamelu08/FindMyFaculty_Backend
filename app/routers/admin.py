@@ -26,25 +26,29 @@ def get_db():
 def add_faculty(faculty: FacultyCreate, db: Session = Depends(get_db)):
     return create_faculty(db, faculty)
 
-@router.put("/faculty/{faculty_id}", response_model=FacultyResponse)
+@router.put("/faculty/{faculty_name}", response_model=FacultyResponse)
 def edit_faculty(
-    faculty_id: int,
+    faculty_name: str,
     faculty: FacultyUpdate,
     db: Session = Depends(get_db)
 ):
-    updated_faculty = update_faculty(db, faculty_id, faculty)
+    updated_faculty = update_faculty(db, faculty_name, faculty)
+
     if not updated_faculty:
         raise HTTPException(status_code=404, detail="Faculty not found")
+
     return updated_faculty
 
-@router.delete("/faculty/{faculty_id}")
+@router.delete("/faculty/{faculty_name}")
 def remove_faculty(
-    faculty_id: int,
+    faculty_name: str,
     db: Session = Depends(get_db)
 ):
-    deleted_faculty = delete_faculty(db, faculty_id)
+    deleted_faculty = delete_faculty(db, faculty_name)
+
     if not deleted_faculty:
         raise HTTPException(status_code=404, detail="Faculty not found")
+
     return {"message": "Faculty deleted successfully"}
 
 @router.post("/upload-timetable")
