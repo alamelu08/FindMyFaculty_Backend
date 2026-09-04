@@ -191,3 +191,54 @@ def get_current_period(db: Session):
     return None
 def get_current_day():
     return datetime.now().strftime("%a").upper()
+
+def get_upcoming_faculty_hours(db: Session, faculty_id: str):
+
+    faculty = (
+        db.query(Faculty)
+        .filter(Faculty.id == faculty_id)
+        .first()
+    )
+
+    if not faculty:
+        return None
+
+    current_day = get_current_day()
+    current_time = datetime.now().time()
+
+    # No timetable needed on Sunday
+    if current_day == "SUN":
+        return {
+            "faculty": faculty.name,
+            "day": current_day,
+            "upcoming": []
+        }
+
+    upcoming = (
+        db.query(FacultyTimetable, Period)
+        .join(
+            Period,
+            FacultyTimetable.period_no == Period.period_no
+        )
+        .filter(
+            FacultyTimetable.faculty_id == faculty_id,
+            FacultyTimetable.day == current_day,
+            Period.start_time > current_time
+        )
+        .order_by(Period.period_no)
+        .all()
+    )
+
+    return {
+        "faculty": faculty.name,
+        "day": current_day,
+        "upcoming": [
+            {
+                "period": timetable.period_no,
+                "start_time": period.start_time,
+                "end_time": period.end_time,
+                "room": timetable.room
+            }
+            for timetable, period in upcoming
+        ]
+    }
