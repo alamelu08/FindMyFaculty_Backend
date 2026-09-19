@@ -34,23 +34,47 @@ def get_all_faculties(db: Session):
 def get_faculty_by_id(db: Session, faculty_id: str):
     return db.query(Faculty).filter(Faculty.id == faculty_id).first()
 
-def update_faculty(db: Session, faculty_name: str, faculty: FacultyUpdate):
+def find_faculty_by_name(db: Session, faculty_name: str):
+    if not faculty_name or not faculty_name.strip():
+        return None
 
-    existing_faculty = (
-        db.query(Faculty)
-        .filter(Faculty.name == normalize_name(faculty_name))
-        .first()
-    )
+    clean_name = faculty_name.strip()
+    norm_name = normalize_name(clean_name)
+
+    # 1. Exact match on normalized name (case-insensitive)
+    faculty = db.query(Faculty).filter(Faculty.name.ilike(norm_name)).first()
+    if faculty:
+        return faculty
+
+    # 2. Exact match on raw input name (case-insensitive)
+    faculty = db.query(Faculty).filter(Faculty.name.ilike(clean_name)).first()
+    if faculty:
+        return faculty
+
+    # 3. Substring match on normalized name
+    faculty = db.query(Faculty).filter(Faculty.name.ilike(f"%{norm_name}%")).first()
+    if faculty:
+        return faculty
+
+    # 4. Substring match on raw input
+    faculty = db.query(Faculty).filter(Faculty.name.ilike(f"%{clean_name}%")).first()
+    if faculty:
+        return faculty
+
+    return None
+
+def update_faculty(db: Session, faculty_name: str, faculty: FacultyUpdate):
+    existing_faculty = find_faculty_by_name(db, faculty_name)
 
     if not existing_faculty:
         return None
 
-    normalized_name = normalize_name(faculty.name)
+    # Only update fields that were provided (not None and not empty string)
+    if faculty.cabin is not None and faculty.cabin.strip():
+        existing_faculty.cabin = faculty.cabin.strip()
 
-    existing_faculty.name = normalized_name
-    existing_faculty.image_url = find_image_url(normalized_name)
-    existing_faculty.cabin = faculty.cabin
-    existing_faculty.cabin_directions = faculty.cabin_directions
+    if faculty.cabin_directions is not None and faculty.cabin_directions.strip():
+        existing_faculty.cabin_directions = faculty.cabin_directions.strip()
 
     db.commit()
     db.refresh(existing_faculty)
@@ -58,11 +82,7 @@ def update_faculty(db: Session, faculty_name: str, faculty: FacultyUpdate):
     return existing_faculty
 
 def delete_faculty(db: Session, faculty_name: str):
-    faculty = (
-        db.query(Faculty)
-        .filter(Faculty.name == faculty_name)
-        .first()
-    )
+    faculty = find_faculty_by_name(db, faculty_name)
     if not faculty:
         return None
     db.delete(faculty)

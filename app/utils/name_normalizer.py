@@ -17,7 +17,7 @@ def normalize_name(name: str) -> str:
 
     # Remove titles
     name = re.sub(
-        r"^(Dr|Mr|Mrs|Ms|Prof)\.?\s*",
+        r"^(Mrs|Mr|Dr|Prof|Ms)\.?\s*",
         "",
         name,
         flags=re.IGNORECASE,

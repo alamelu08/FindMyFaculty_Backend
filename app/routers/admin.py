@@ -11,6 +11,7 @@ from app.services.faculty_services import (
     create_faculty,
     update_faculty,
     delete_faculty,
+    find_faculty_by_name,
 )
 
 router = APIRouter(prefix="/admin", tags=["Admin"],dependencies=[Depends(get_current_admin)])
@@ -21,6 +22,18 @@ def get_db():
         yield db
     finally:
         db.close()
+
+@router.get("/faculty/{faculty_name}", response_model=FacultyResponse)
+def get_faculty_by_name_route(
+    faculty_name: str,
+    db: Session = Depends(get_db)
+):
+    faculty = find_faculty_by_name(db, faculty_name)
+
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty not found")
+
+    return faculty
 
 @router.post("/faculty", response_model=FacultyResponse)
 def add_faculty(faculty: FacultyCreate, db: Session = Depends(get_db)):

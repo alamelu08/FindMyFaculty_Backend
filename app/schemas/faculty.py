@@ -1,17 +1,37 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class FacultyCreate(BaseModel):
     name: str
     cabin: str
-    cabin_directions: str
+    cabin_directions: Optional[str] = None
+
+    model_config = {
+        "from_attributes": True,
+        "json_schema_extra": {
+            "example": {
+                "name": "string",
+                "cabin": "string",
+                "cabin_directions": "string"
+            }
+        }
+    }
 
 
 class FacultyUpdate(BaseModel):
-    name: str
-    cabin: str
-    cabin_directions: str
+    cabin: Optional[str] = None
+    cabin_directions: Optional[str] = None
+
+    model_config = {
+        "from_attributes": True,
+        "json_schema_extra": {
+            "example": {
+                "cabin": "string",
+                "cabin_directions": "string"
+            }
+        }
+    }
 
 
 class FacultyResponse(BaseModel):
@@ -21,5 +41,6 @@ class FacultyResponse(BaseModel):
     cabin: str
     cabin_directions: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
