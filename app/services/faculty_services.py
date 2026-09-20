@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 from app.models.faculty import Faculty
 from app.schemas.faculty import FacultyCreate, FacultyUpdate
-from datetime import datetime
+from datetime import datetime,timezone, timedelta
+from zoneinfo import ZoneInfo
 from app.models.faculty_timetable import FacultyTimetable
 from app.models.period import Period
 from datetime import time
@@ -191,3 +192,73 @@ def get_current_period(db: Session):
     return None
 def get_current_day():
     return datetime.now().strftime("%a").upper()
+
+def get_upcoming_faculty_hours(db: Session, faculty_id: str):
+    faculty = db.query(Faculty).filter(
+        Faculty.id == faculty_id
+    ).first()
+
+    if not faculty:
+        return None
+
+    timetable = (
+        db.query(FacultyTimetable, Period)
+        .join(
+            Period,
+            FacultyTimetable.period_no == Period.period_no
+        )
+        .filter(
+            FacultyTimetable.faculty_id == faculty_id
+        )
+        .all()
+    )
+
+    india_timezone = timezone(timedelta(hours=5, minutes=30))
+    now = datetime.now(india_timezone)
+
+    day_order = {
+        "monday": 0,
+        "tuesday": 1,
+        "wednesday": 2,
+        "thursday": 3,
+        "friday": 4,
+        "saturday": 5,
+        "sunday": 6,
+    }
+
+    current_day = now.weekday()
+    current_time = now.time()
+
+    upcoming = []
+
+    for timetable_entry, period in timetable:
+        day_name = timetable_entry.day.strip().lower()
+
+        if day_name not in day_order:
+            continue
+
+        day_index = day_order[day_name]
+
+        days_ahead = (day_index - current_day) % 7
+
+        # If the class is today, only include it if it hasn't started.
+        if days_ahead == 0 and period.start_time <= current_time:
+            days_ahead = 7
+
+        upcoming.append({
+            "day": timetable_entry.day,
+            "period_no": timetable_entry.period_no,
+            "start_time": period.start_time.strftime("%H:%M"),
+            "end_time": period.end_time.strftime("%H:%M"),
+            "room": timetable_entry.room,
+            "days_ahead": days_ahead,
+        })
+
+    upcoming.sort(
+        key=lambda item: (
+            item["days_ahead"],
+            item["start_time"]
+        )
+    )
+
+    return upcoming

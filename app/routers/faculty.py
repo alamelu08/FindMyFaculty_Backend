@@ -64,11 +64,12 @@ def faculty_location(
     return location
 
 @router.get("/{faculty_id}/upcoming")
-def faculty_upcoming_hours(
-    faculty_id:str,
-    db: Session=Depends(get_db)
+def faculty_upcoming(
+    faculty_id: str,
+    db: Session = Depends(get_db)
 ):
-    upcoming = get_upcoming_faculty_hours(db,faculty_id)
+    upcoming = get_upcoming_faculty_hours(db, faculty_id)
+
     if upcoming is None:
         raise HTTPException(
             status_code=404,
