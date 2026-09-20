@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.database.database import Base, engine
 from app.models import faculty, period, faculty_timetable
 from app.routers import admin,faculty,login,login_admin
@@ -6,6 +7,15 @@ from app.routers import admin,faculty,login,login_admin
 
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(admin.router)
 app.include_router(faculty.router)
 app.include_router(login.router)
