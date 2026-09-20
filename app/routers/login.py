@@ -8,8 +8,16 @@ router = APIRouter()
 @router.post("/login",tags=["Authentication"])
 async def login(request: OAuth2PasswordRequestForm = Depends()):
 
+    rollno = request.username.strip().upper()
+
+    if len(rollno) < 3 or rollno[2] not in {"Z", "N"}:
+        raise HTTPException(
+            status_code=403,
+            detail="Sorry, access is currently limited to CSE department students."
+        )
+    
     valid = await auth.verify_student(
-        request.username,
+        rollno,
         request.password
     )
 
@@ -20,7 +28,7 @@ async def login(request: OAuth2PasswordRequestForm = Depends()):
         )
 
     access_token = create_access_token(
-        data={"sub": request.username}
+        data={"sub": rollno}
     )
 
     return {
