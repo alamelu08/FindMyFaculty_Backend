@@ -135,17 +135,21 @@ def get_faculty_details(faculty_id: str, db: Session):
     )
 
     if timetable:
+        room_str = timetable.room.strip() if timetable.room and timetable.room.strip() != '-' else "Classroom"
+        display_room = room_str if any(k in room_str.lower() for k in ["room", "hall", "lab", "classroom"]) else f"Classroom {room_str}"
         return {
             "faculty": faculty.name,
-            "status": "In Class",
-            "location": timetable.room,
+            "status": f"In Class ({display_room})",
+            "is_in_class": True,
+            "location": display_room,
             "day": current_day,
             "period": current_period
         }
 
     return {
         "faculty": faculty.name,
-        "status": "Available",
+        "status": "Available (Free Period)",
+        "is_in_class": False,
         "location": faculty.cabin,
         "day": current_day,
         "period": current_period
@@ -193,13 +197,19 @@ def get_faculty_location(db, faculty_id: str):
     )
 
     if timetable:
+        room_str = timetable.room.strip() if timetable.room and timetable.room.strip() != '-' else "Classroom"
+        display_room = room_str if any(k in room_str.lower() for k in ["room", "hall", "lab", "classroom"]) else f"Classroom {room_str}"
         return {
-            "location": timetable.room
-    }
+            "location": display_room,
+            "is_in_class": True,
+            "period": current_period.period_no
+        }
 
     return {
-        "location": faculty.cabin
-}
+        "location": faculty.cabin,
+        "is_in_class": False,
+        "period": current_period.period_no
+    }
 def get_current_period(db: Session):
     current_time = datetime.now().time()
 
@@ -237,13 +247,13 @@ def get_upcoming_faculty_hours(db: Session, faculty_id: str):
     now = datetime.now(india_timezone)
 
     day_order = {
-        "monday": 0,
-        "tuesday": 1,
-        "wednesday": 2,
-        "thursday": 3,
-        "friday": 4,
-        "saturday": 5,
-        "sunday": 6,
+        "monday": 0, "mon": 0,
+        "tuesday": 1, "tue": 1,
+        "wednesday": 2, "wed": 2,
+        "thursday": 3, "thu": 3,
+        "friday": 4, "fri": 4,
+        "saturday": 5, "sat": 5,
+        "sunday": 6, "sun": 6,
     }
 
     current_day = now.weekday()
@@ -282,3 +292,73 @@ def get_upcoming_faculty_hours(db: Session, faculty_id: str):
     )
 
     return upcoming
+
+
+def get_faculty_day_timetable(db: Session, faculty_id: str, day: str = None):
+    faculty = db.query(Faculty).filter(Faculty.id == faculty_id).first()
+    if not faculty:
+        return None
+
+    if not day:
+        day = get_current_day()
+
+    day_clean = day.strip().upper()
+    day_map = {
+        "MONDAY": "MON", "MON": "MON",
+        "TUESDAY": "TUE", "TUE": "TUE",
+        "WEDNESDAY": "WED", "WED": "WED",
+        "THURSDAY": "THU", "THU": "THU",
+        "FRIDAY": "FRI", "FRI": "FRI",
+        "SATURDAY": "SAT", "SAT": "SAT",
+        "SUNDAY": "SUN", "SUN": "SUN",
+    }
+    target_day = day_map.get(day_clean, day_clean)
+
+    timetable = (
+        db.query(FacultyTimetable, Period)
+        .join(Period, FacultyTimetable.period_no == Period.period_no)
+        .filter(
+            FacultyTimetable.faculty_id == faculty_id,
+            FacultyTimetable.day == target_day
+        )
+        .order_by(Period.period_no)
+        .all()
+    )
+
+    india_timezone = timezone(timedelta(hours=5, minutes=30))
+    now = datetime.now(india_timezone)
+    current_time = now.time()
+    today_code = get_current_day()
+
+    slots = []
+    for entry, period in timetable:
+        if target_day == today_code:
+            if period.start_time <= current_time <= period.end_time:
+                status = "Ongoing"
+            elif current_time > period.end_time:
+                status = "Completed"
+            else:
+                status = "Upcoming"
+        else:
+            status = "Scheduled"
+
+        room_str = entry.room.strip() if entry.room and entry.room.strip() != '-' else "Classroom"
+        display_room = room_str if any(k in room_str.lower() for k in ["room", "hall", "lab", "classroom"]) else f"Classroom {room_str}"
+
+        slots.append({
+            "day": entry.day,
+            "period_no": entry.period_no,
+            "start_time": period.start_time.strftime("%H:%M"),
+            "end_time": period.end_time.strftime("%H:%M"),
+            "room": display_room,
+            "status": status
+        })
+
+    return {
+        "faculty_id": faculty.id,
+        "faculty_name": faculty.name,
+        "day": target_day,
+        "is_today": (target_day == today_code),
+        "total_periods": len(slots),
+        "timetable": slots
+    }

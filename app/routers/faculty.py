@@ -8,7 +8,8 @@ from app.services.faculty_services import (
     search_faculty,
     get_faculty_location,
     get_faculty_details,
-    get_upcoming_faculty_hours
+    get_upcoming_faculty_hours,
+    get_faculty_day_timetable
 )
 from app.dependencies.student_auth import get_current_user
 
@@ -77,3 +78,15 @@ def faculty_upcoming(
         )
 
     return upcoming
+
+
+@router.get("/{faculty_id}/timetable")
+def faculty_day_timetable(
+    faculty_id: str,
+    day: str = Query(None, description="Optional 3-letter day e.g. MON, TUE, WED, THU, FRI, SAT, SUN"),
+    db: Session = Depends(get_db)
+):
+    result = get_faculty_day_timetable(db, faculty_id, day)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Faculty not found")
+    return result
