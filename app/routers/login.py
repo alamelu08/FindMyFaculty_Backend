@@ -8,8 +8,10 @@ router = APIRouter()
 @router.post("/login",tags=["Authentication"])
 async def login(request: OAuth2PasswordRequestForm = Depends()):
 
+    clean_roll = (request.username or "").strip().upper()
+
     valid = await auth.verify_student(
-        request.username,
+        clean_roll,
         request.password
     )
 
@@ -20,7 +22,7 @@ async def login(request: OAuth2PasswordRequestForm = Depends()):
         )
 
     access_token = create_access_token(
-        data={"sub": request.username}
+        data={"sub": clean_roll}
     )
 
     return {

@@ -2,14 +2,14 @@ import httpx
 from bs4 import BeautifulSoup
 
 async def verify_student(rollno: str, password: str):
-    clean_roll = (rollno or "").strip().lower()
-    clean_pwd = (password or "").strip()
+    clean_roll = (rollno or "").strip().upper()
 
-    if not clean_roll or not clean_pwd:
+    if not clean_roll or not password:
         return False
 
     # Demo student credentials for development & testing
-    if clean_roll in ["student", "demo", "24z208", "24z201", "cse_student", "24z228"]:
+    demo_credentials = {"STUDENT", "DEMO", "24Z208", "24Z201", "CSE_STUDENT", "24Z228"}
+    if clean_roll in demo_credentials:
         return True
 
     try:
@@ -26,13 +26,12 @@ async def verify_student(rollno: str, password: str):
             )
 
             if not token_input:
-                # If CSRF token is not found and credentials provided
-                return len(clean_roll) >= 5
+                return False
 
             token = token_input["value"]
 
             payload = {
-                "rollno": rollno,
+                "rollno": clean_roll,
                 "password": password,
                 "chkterms": "on",
                 "__RequestVerificationToken": token,
@@ -44,14 +43,18 @@ async def verify_student(rollno: str, password: str):
                 follow_redirects=True
             )
 
-            if "/studzone/Login/Logout" in login_response.text:
+            redirected_to_home = "/Home" in str(login_response.url)
+            contains_logout = (
+                "/studzone/Login/Logout" in login_response.text or
+                "/Login/Logout" in login_response.text or
+                "logout" in login_response.text.lower()
+            )
+
+            if redirected_to_home or contains_logout:
                 return True
 
             return False
     except Exception as e:
         print("Studzone connection error:", e)
-        # Fallback for offline/timeout situations if a valid-looking roll number and password are typed
-        if len(clean_roll) >= 5 and clean_pwd:
-            return True
         return False
 
